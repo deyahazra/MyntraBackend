@@ -1,0 +1,20 @@
+{
+  "name": "expresstemp",
+  "version": "1.0.0",
+  "description": "template repo",
+  "main": "app.js",
+  "scripts": {
+    "test": "npm run"
+  },
+  "author": "deya",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.1.0"
+  }
+}
