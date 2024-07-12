@@ -7,6 +7,7 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+const multer = require('multer');
 
 // Local imports
 const HttpError = require('./models/http-error');
@@ -16,12 +17,6 @@ const app = express();
 
 
 //-----------------------Middlewares-----------------------//
-
-// Body parser middleware
-app.use(bodyParser.urlencoded({extended: true}));
-app.use(bodyParser.json());
-
-
 // CORS middleware
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*'); // Allow access to any domain
@@ -32,6 +27,34 @@ app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, PUT, DELETE'); // Allow these methods
     next();
 });
+// Body parser middleware
+app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.json());
+
+
+
+// Multer middleware
+const parseFormDataMiddleware = multer({
+    dest: './uploads',
+    limits: {
+      fileSize: 1024 * 1024 * 80 // 20MB
+    },
+    fileFilter(req, file, cb) {
+      if (!file) {
+        next();
+      }
+      if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) {
+        return cb(new Error('Please upload an image'))
+      }
+      cb(undefined, true)
+    },
+    onError(err, next) {
+      console.log(err)
+      next(err)
+    },
+});
+
+app.use(parseFormDataMiddleware.any());
 
 // Routes middleware initialization
 

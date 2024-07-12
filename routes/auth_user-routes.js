@@ -35,6 +35,12 @@ router.post(
     authUserController.login
 );
 
+router.get(
+    '/get-score',
+    authUserController.getScore
+);
+
+
 
 // router.use(checkAuth); // Middleware to check if the user is authenticated
 
@@ -44,6 +50,11 @@ router.post(
         check('friendEmail').normalizeEmail().isEmail()
     ],
     authUserController.addfriend
+
+);
+router.post(
+    '/add-post',
+    authUserController.addPost
 
 );
 router.post(
@@ -57,6 +68,10 @@ router.post(
 router.get(
     '/get-notifications',
     authUserController.getNotifications
+);
+router.post(
+    '/give-vote',
+    authUserController.giveVote
 );
 
 

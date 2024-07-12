@@ -11,7 +11,8 @@ const HttpError = require('../models/http-error');
 const User = require('../models/users');
 const Notification = require('../models/notifications');
 const Wishlist = require('../models/wishlist');
-
+const Post = require('../models/post');
+const Score = require('../models/score');
 const blobToBase64 = require('../utils/blob-base64');
 
 
@@ -204,6 +205,161 @@ const getNotifications = async (req, res, next) => {
 
         
 }
+const addPost= async (req, res, next) => {
+    // Extracting data from the request
+    const {userId, theme} = req.body;
+
+    // Checking if the user exists
+    let existingUser;
+    try{
+        existingUser= await User.findById(userId);
+    }
+    catch(err){
+        const error = new HttpError('Could not add post, please try again later!', 500);
+        return next(error);
+    }
+
+    if(!existingUser){
+        const error = new HttpError('User not found, please try again later!', 404);
+        return next(error);
+    }
+
+    let imageBase64;
+    if (req.files.length == 0 || !req.files[0] || !req.files[0].mimetype.startsWith('image')) {
+        console.log('No image found');
+    }
+    else {
+        imageBase64 = await blobToBase64(req.files[0]);
+        if (!imageBase64 && imageBase64 == "") {
+            console.log('Error, No image found');
+        }
+    }
+
+
+    // Creating a new post
+    const post = new Post({
+        userId,
+        theme,
+        image: imageBase64
+    });
+
+    // Saving the post to the database
+    try{
+        await post.save();
+        // Update or create score entry for the user
+        let scoreEntry = await Score.findOne({ userId: userId });
+        if (scoreEntry) {
+            scoreEntry.score += 100; // Update the score to 100
+            await scoreEntry.save();
+        } else {
+            // If no score entry exists, create a new one with a score of 100
+            const newScoreEntry = new Score({
+                userId: userId,
+                score: 100
+            });
+            try {
+                await newScoreEntry.save();
+            } catch (err) {
+                const error = new HttpError('Could not add post, please try again later!', 500);
+                return next(error);
+            }
+            // await newScoreEntry.save();
+        }
+
+    }
+    catch(err){
+        const error = new HttpError('Could not add post, please try again later!', 500);
+        return next(error);
+    }
+
+
+    // Sending the response
+    res.status(200).json({message: 'Post added successfully!', image: imageBase64, theme: theme, userId: userId});
+}
+const getScore= async (req, res, next) => {
+    // Extracting data from the request
+    const userId = req.headers.authorization
+
+    // Checking if the user exists
+    let existingUser;
+    try{
+        existingUser= await User.findById(userId);
+    }
+    catch(err){
+        const error = new HttpError('Could not get score, please try again later!', 500);
+        return next(error);
+    }
+
+    if(!existingUser){
+        const error = new HttpError('User not found, please try again later!', 404);
+        return next(error);
+    }
+
+    // Getting the score
+    let score;
+    try{
+        score= await Score.findOne({userId: userId});
+    }
+    catch(err){
+        const error = new HttpError('Could not get score, please try again later!', 500);
+        return next(error);
+    }
+
+    // Sending the response
+    res.status(200).json({score: score.score});
+}
+const giveVote = async (req, res, next) => {
+    // Extracting data from the request
+    const {userId} = req.body;
+
+    // Checking if the user exists
+    let existingUser;
+    try{
+        existingUser= await User.findById(userId);
+    }
+    catch(err){
+        const error = new HttpError('Could not add post, please try again later!', 500);
+        return next(error);
+    }
+
+    if(!existingUser){
+        const error = new HttpError('User not found, please try again later!', 404);
+        return next(error);
+    }
+
+
+    // Getting the score
+    let score;
+    try {
+        score = await Score.findOne({
+            userId: userId
+        });
+    
+        // Check if score exists, if not, create a new score with 50
+        if (!score) {
+            // Assuming Score is a Mongoose model, adjust accordingly if not
+            score = new Score({
+                userId: userId,
+                score: 50 // Starting with a score of 50 if no score exists
+            });
+        } else {
+            // If score exists, increase it by 50
+            score.score += 50;
+        }
+    
+        // Save the updated or new score
+        await score.save();
+    
+    } catch (err) {
+        const error = new HttpError('Could not update score, please try again later!', 500);
+        return next(error);
+    }
+    
+    // Sending the response with the updated score
+    res.status(200).json({score: score.score});
+}
+
+
 
 const addToWishlist = async (req, res, next) => {
     
@@ -299,3 +455,6 @@ exports.login = login;
 exports.addToWishlist = addToWishlist;
 exports.addfriend = addfriend;
 exports.getNotifications = getNotifications;
+exports.addPost = addPost;
+exports.getScore = getScore;
+exports.giveVote = giveVote;
